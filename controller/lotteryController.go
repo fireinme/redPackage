@@ -5,11 +5,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 )
 
 //红包数据结构:  map[用户ID]对应红包（单位:分）
-var PackageList = make(map[int32][]int64)
+var PackageList = new(sync.Map)
 
 type LotteryController struct {
 }
@@ -37,6 +38,7 @@ func (l LotteryController) Set(ctx *gin.Context) {
 	num := req.Num
 	maxRate := 0.24 //每个红包占余额的是最大比率
 	for i := num; i > 0; i-- {
+
 		var pMoney int64
 		//最后一个红包 剩余全部给
 		if i == 1 {
@@ -52,7 +54,8 @@ func (l LotteryController) Set(ctx *gin.Context) {
 		}
 		list = append(list, pMoney)
 	}
-	PackageList[req.Uid] = list
+	PackageList.Store(req.Uid, list)
+	/*PackageList[req.Uid] = list*/
 	log.Printf("PackageList:%v", PackageList)
 	url := fmt.Sprintf("/get?uid=%d", req.Uid)
 	data := gin.H{
@@ -76,17 +79,17 @@ func (l LotteryController) Get(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"msg": "参数错误", "data": ""})
 		return
 	}
-	_, has := PackageList[req.Uid]
+	list, has := PackageList.Load(req.Uid)
 	if !has {
 		ctx.JSON(200, gin.H{"msg": "红包已经发完", "data": ""})
 		return
 	}
-	list := PackageList[req.Uid]
-	money := list[0]
-	if len(PackageList[req.Uid]) == 1 {
-		delete(PackageList, req.Uid)
+	iList := list.([]int64)
+	money := iList[0]
+	if len(iList) == 1 {
+		PackageList.Delete(req.Uid)
 	} else {
-		PackageList[req.Uid] = PackageList[req.Uid][1:]
+		PackageList.Store(req.Uid, iList[1:])
 	}
 	log.Printf("PackageList:%v", PackageList)
 	ctx.JSON(200, gin.H{"msg": "success", "data": money})

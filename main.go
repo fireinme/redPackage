@@ -15,6 +15,6 @@ func main() {
 func InitRoute(app *gin.Engine) {
 	lotteryController := controller.LotteryController{}
 	app.GET("/set", lotteryController.Set) //设置红包金额
-	app.GET("/get", lotteryController.Get) //设置红包金额
+	app.GET("/get", lotteryController.Get) //获取红包金额
 
 }
