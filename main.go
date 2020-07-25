@@ -9,11 +9,16 @@ import (
 
 func main() {
 	app := gin.Default()
-	InitRoute(app)
+	lotteryController := controller.LotteryController{}
+	//单独处理红包发放
+	ch := make(chan controller.Task)
+	lotteryController.Ch = ch
+	go lotteryController.GetPackageServer()
+	//启动路由
+	InitRoute(app, lotteryController)
 	_ = app.Run()
 }
-func InitRoute(app *gin.Engine) {
-	lotteryController := controller.LotteryController{}
+func InitRoute(app *gin.Engine, lotteryController controller.LotteryController) {
 	app.GET("/set", lotteryController.Set) //设置红包金额
 	app.GET("/get", lotteryController.Get) //获取红包金额
 
